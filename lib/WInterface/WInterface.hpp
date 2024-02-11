@@ -4,12 +4,11 @@
 #include <cstdint>
 #include <string>
 
-#include <conio.h>
-
+#include <ncurses.h>
 
 class WeatherUI {
 public:
-    WeatherUI() = delete;
+    WeatherUI() = default;
     explicit WeatherUI(std::string&);
 
     static void PrintWelcomeScreen();

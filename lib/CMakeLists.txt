@@ -1,2 +1,2 @@
 add_subdirectory(WConfig)
-add_subdirectory(WeatherInterface)
+add_subdirectory(WInterface)

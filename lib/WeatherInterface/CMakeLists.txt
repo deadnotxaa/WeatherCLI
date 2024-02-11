@@ -1,1 +1,0 @@
-add_library(WeatherInterface WeatherInterface.cpp WeatherInterface.hpp)

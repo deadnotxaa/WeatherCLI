@@ -7,11 +7,6 @@ project(
         LANGUAGES CXX
 )
 
-if (WIN32) # Install dlls in the same directory as the executable on Windows
-    set(CMAKE_LIBRARY OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-endif()
-
 include(FetchContent)
 
 # CPR
@@ -27,8 +22,17 @@ FetchContent_Declare(json
 )
 FetchContent_MakeAvailable(json)
 
+set(GCC_COVERAGE_COMPILE_FLAGS "-lncurses")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
+
+# NCURSES
+#FetchContent_Declare(ncurses
+#        GIT_REPOSITORY https://github.com/mirror/ncurses
+#        GIT_TAG v6.4
+#)
+#FetchContent_MakeAvailable(ncurses)
+
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
 
 add_subdirectory(lib)
 add_subdirectory(bin)
