@@ -1,36 +1,63 @@
 #pragma once
 
-#include <iostream>
-#include <string>
 #include <filesystem>
+#include <iostream>
 #include <fstream>
-#include <vector>
+#include <string>
+#include <utility>
 
-#include <ncurses.h>
 #include <nlohmann/json.hpp>
-
 #define json nlohmann::json
 
-enum class Errors {
-    kWrongConfigFormat,
-    kConfigCreationError,
-};
+#include "../WRequests/WRequests.hpp"
 
-class Weather {
-public:
-    Weather() = default;
+namespace wwidget {
 
-    void SetConfig();
-    void ReadConfig();
-    bool CheckConfig() const;
-    static void CreateNewConfig();
+    struct CityData {
+        CityData(std::string, double, double);
+        CityData() = default;
 
-    static void ErrorHandler(Errors);
-    static void PrintWelcomeMessage();
+        std::string city_name_{};
+        double latitude_{};
+        double longitude_{};
+    };
 
-private:
-    std::string config_path = "config.json";
-    std::vector<std::string> cities;
-    uint64_t frequency = 3;
-    uint64_t number_of_days = 3;
-};
+    void to_json(json&, const CityData&);
+    void from_json(const json&, CityData&);
+
+    class Configuration {
+        friend Requests;
+    public:
+        Configuration() = default;
+
+        bool CreateConfigFile() noexcept;
+        static bool IsConfigGood() noexcept;
+        bool ReadConfigData() noexcept;
+
+        void AddCities();
+        void ChangeFrequency();
+        void ChangeDaysNumber();
+
+        static void CreateWeatherConfig() noexcept;
+        static bool IsWeatherDataGood() noexcept;
+
+        [[nodiscard]] uint32_t GetNumberOfDays() const;
+
+    private:
+        std::vector<CityData> cities_{};
+
+        uint32_t frequency_{};
+        uint32_t days_number_{};
+    };
+
+    static const char* config_file_name_ = "config.json";
+    static const char* weather_config_name_ = "weather.json";
+
+    static const char* cities_json_name_ = "cities";
+    static const char* frequency_json_name_ = "frequency";
+    static const char* days_number_json_name_ = "number_of_days";
+
+    constexpr uint32_t kMinDaysNumber = 3;
+    constexpr uint32_t kMinFrequency = 60;
+
+} // namespace wwidget

@@ -1,17 +1,24 @@
-#include <iostream>
-// #include <cstdint>
-#include <filesystem>
-#include <string>
+#include <thread>
 
 #include "lib/WConfig/WConfig.hpp"
-// #include "lib/WInterface/WInterface.hpp"
+#include "lib/WInterface/WInterface.hpp"
+#include "lib/WRequests/WRequests.hpp"
 
+int main(int argc, char** argv)
+{
+    wwidget::Configuration configuration;
 
-int main(int argc, char** argv) {
-    Weather::PrintWelcomeMessage();
+    if (wwidget::Configuration::IsConfigGood()) {
+        configuration.ReadConfigData();
+    } else {
+        configuration.CreateConfigFile();
+    }
 
-    Weather weather;
-    weather.SetConfig();
+    if (wwidget::Configuration::IsWeatherDataGood() == false) {
+        wwidget::Configuration::CreateWeatherConfig();
+    }
+
+    wwidget::Interface::ShowWeather(configuration.GetNumberOfDays());
 
     return 0;
 }

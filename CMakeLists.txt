@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.28)
 
 project(
-        weather_forecast
+        wwidget
         VERSION 1.0
         DESCRIPTION "C++ Console Weather Forecast"
         LANGUAGES CXX
@@ -25,14 +25,19 @@ FetchContent_MakeAvailable(json)
 set(GCC_COVERAGE_COMPILE_FLAGS "-lncurses")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
 
-# NCURSES
-#FetchContent_Declare(ncurses
-#        GIT_REPOSITORY https://github.com/mirror/ncurses
-#        GIT_TAG v6.4
-#)
-#FetchContent_MakeAvailable(ncurses)
+# FTXUI
+FetchContent_Declare(ftxui
+        GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
+        GIT_TAG v5.0.0
+)
 
-set(CMAKE_CXX_STANDARD 20)
+FetchContent_GetProperties(ftxui)
+if(NOT ftxui_POPULATED)
+    FetchContent_Populate(ftxui)
+    add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+set(CMAKE_CXX_STANDARD 23)
 
 add_subdirectory(lib)
 add_subdirectory(bin)

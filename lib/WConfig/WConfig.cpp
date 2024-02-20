@@ -1,114 +1,208 @@
 #include "WConfig.hpp"
 
-void Weather::SetConfig() {
-    initscr();
+wwidget::CityData::CityData(std::string city_name, const double latitude, const double longitude)
+            : city_name_(std::move(city_name)), latitude_(latitude), longitude_(longitude)
+{
+}
 
-    // Checks if config already exists and well-formated
-    if (std::filesystem::exists(this->config_path)) {
+void wwidget::to_json(json& j, const CityData& data) {
+    j = json{{"city", data.city_name_}, {"latitude", data.latitude_}, {"longitude", data.longitude_}};
+}
 
-        // Not well-formated
-        if (CheckConfig() == false) {
-            ErrorHandler(Errors::kWrongConfigFormat);
-            CreateNewConfig();
+void wwidget::from_json(const json& j, CityData& data) {
+    j.at("city").get_to(data.city_name_);
+    j.at("latitude").get_to(data.latitude_);
+    j.at("longitude").get_to(data.longitude_);
+}
 
-            return;
+bool wwidget::Configuration::CreateConfigFile() noexcept {
+    if (std::filesystem::exists(config_file_name_)) {
+        std::filesystem::remove(config_file_name_);
+        std::cout << "Old config file was deleted" << std::endl;
+    }
+
+    std::ofstream config_file(config_file_name_, std::ios::out);
+
+    if (!config_file.good()) {
+        return false;
+    }
+
+    json config_json;
+
+    AddCities();
+    ChangeFrequency();
+    ChangeDaysNumber();
+
+    config_json[cities_json_name_] = this->cities_;
+    config_json[frequency_json_name_] = this->frequency_;
+    config_json[days_number_json_name_] = this->days_number_;
+
+    // write pretty-formatted json file
+    config_file << std::setw(4) <<  config_json << std::endl;
+    return true;
+}
+
+bool wwidget::Configuration::IsConfigGood() noexcept {
+    if (std::filesystem::exists(config_file_name_) == false) {
+       return false;
+    }
+
+    std::ifstream config_file(config_file_name_, std::ios::in);
+
+    json config_data;
+
+    try {
+        config_data = json::parse(config_file);
+    }
+    catch (const json::parse_error& error) {
+        std::cerr << "ERROR!!11!!!1!!11" << std::endl << error.what() << std::endl;
+        return false;
+    }
+
+    if (!(config_data.contains(cities_json_name_) &&
+        config_data.contains(frequency_json_name_) &&
+        config_data.contains(days_number_json_name_)))
+    {
+        return false;
+    }
+
+    if (config_data[cities_json_name_].empty() ||
+        config_data[frequency_json_name_] < kMinFrequency ||
+        config_data[days_number_json_name_] < kMinDaysNumber)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool wwidget::Configuration::ReadConfigData() noexcept {
+    std::ifstream config_file(config_file_name_, std::ios::in);
+
+    json config_data;
+
+    try {
+        config_data = json::parse(config_file);
+    }
+    catch (const json::parse_error& error) {
+        std::cerr << "ERROR!!11!!!1!!11" << std::endl;
+        return false;
+    }
+
+    for (int i = 0; i < config_data[cities_json_name_].size(); ++i) {
+        CityData data = config_data[cities_json_name_][i].template get<wwidget::CityData>();
+
+        this->cities_.push_back(data);
+    }
+    // this->cities_ = config_data[cities_json_name_];
+    this->frequency_ = config_data[frequency_json_name_];
+    this->days_number_ = config_data[days_number_json_name_];
+
+    return true;
+}
+
+void wwidget::Configuration::AddCities() {
+    std::cout << "Input number of cities to add (min = 1)" << std::endl;
+    int32_t number_of_cities{};
+
+    do {
+        std::cin >> number_of_cities;
+
+        if (number_of_cities < 1) {
+            std::cerr << "ti daun?" << std::endl;
         }
-        ReadConfig();
+    } while (number_of_cities < 1);
 
+    std::string city_name;
+    for (int i = 0; i < number_of_cities; ++i) {
+        std::cout << "Input city #" << i + 1 << " name" << std::endl;
+        std::cin >> city_name;
+        std::cout << std::endl;
+
+        if (Requests::IsCityExists(city_name) == false) {
+            std::cerr << "City with such name doesn't exist" << std::endl;
+            i--;
+        }
+        double latitude;
+        double longitude;
+
+        Requests::GetCityCoordinates(city_name, latitude, longitude);
+
+        this->cities_.emplace_back(city_name, latitude, longitude);
+    }
+}
+
+void wwidget::Configuration::ChangeFrequency() {
+    std::cout << "Input refresh frequency (min=60, max=1440)" << std::endl;
+
+    int32_t frequency{};
+
+    do {
+        std::cin >> frequency;
+        if (frequency < 60 || frequency > 1440) {
+            std::cerr << "ti daun?" << std::endl;
+        }
+    } while (frequency < 60 || frequency > 1440);
+
+    this->frequency_ = frequency;
+}
+
+void wwidget::Configuration::ChangeDaysNumber() {
+    std::cout << "Input number of days for forecast (min = 1, max=16)" << std::endl;
+    int32_t days_number{};
+
+    do {
+        std::cin >> days_number;
+
+        if (days_number < 1 || days_number > 16) {
+            std::cerr << "ti daun?" << std::endl;
+        }
+    } while (days_number < 1 || days_number > 16);
+
+    this->days_number_ = days_number;
+}
+
+void wwidget::Configuration::CreateWeatherConfig() noexcept {
+    std::ofstream config(weather_config_name_, std::ios::out);
+
+    std::string weather_data;
+    Requests::GetWeatherData(weather_data);
+
+    std::cout << weather_data << std::endl;
+
+    json weather_json;
+
+    try {
+        weather_json = json::parse(weather_data);
+    }
+    catch (const json::parse_error& error) {
+        std::cerr << "1ERROR!!11!!!1!!11" << std::endl;
         return;
     }
-    printw("Configuration file was not found automatically.\n");
 
-    CreateNewConfig();
-    ReadConfig();
-
-    getch();
-    endwin();
+    config << std::setw(4) << weather_json << std::endl;
 }
 
-void Weather::ReadConfig() {
-    std::ifstream config_file(config_path);
-
-    json config_data = json::parse(config_file);
-
-    this->cities = config_data["cities"];
-    this->frequency = config_data["frequency"];
-    this->number_of_days = config_data["number_of_days"];
-}
-
-bool Weather::CheckConfig() const {
-    std::ifstream config_file(this->config_path, std::ios::in);
-
-    json config_data = json::parse(config_file);
-
-    if (config_data.contains("cities") &&
-        config_data.contains("frequency") &&
-        config_data.contains("number_of_days"))
-    {
-        return true;
+bool wwidget::Configuration::IsWeatherDataGood() noexcept {
+    if (std::filesystem::exists(weather_config_name_) == false) {
+        return false;
     }
 
-    return false;
-}
+    std::ifstream config(weather_config_name_, std::ios::in);
 
-void Weather::CreateNewConfig() {
-    std::ofstream config_file("config.json", std::ios::out);
+    json weather_data;
 
-    json config_data = json::parse(R"({"cities": ["Stavropol", "Saint-Petersburg"], "frequency": 60, "number_of_days": 3})");
-    config_file << std::setw(4) << config_data << std::endl;
-
-    config_file.close();
-}
-
-void Weather::ErrorHandler(const Errors error) {
-    switch (error) {
-        case Errors::kWrongConfigFormat:
-            std::cout << "Config is not supported or been corrupted" << std::endl;
-            break;
-        case Errors::kConfigCreationError:
-            std::cout << "Config file was not created because of unexpected problem."
-                         "Restart the programm and try again" << std::endl;
-            exit(EXIT_FAILURE);
-        default:
-            std::cout << "Unexpected error occured" << std::endl;
-            exit(EXIT_FAILURE);
+    try {
+        weather_data = json::parse(config);
     }
+    catch (const json::parse_error& error) {
+        std::cerr << "2ERROR!!11!!!1!!11" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
-void Weather::PrintWelcomeMessage() {
-    // Initiating a screen
-    initscr();
-    noecho();
-
-    // Setting color for text
-    start_color();
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    init_pair(2, COLOR_WHITE, COLOR_BLACK);
-
-    printw("\n\n");
-
-    attron(COLOR_PAIR(1));
-    printw(
-                " /$$      /$$                       /$$     /$$                          \n" \
-                "| $$  /$ | $$                      | $$    | $$                          \n" \
-                "| $$ /$$$| $$  /$$$$$$   /$$$$$$  /$$$$$$  | $$$$$$$   /$$$$$$   /$$$$$$ \n" \
-                "| $$/$$ $$ $$ /$$__  $$ |____  $$|_  $$_/  | $$__  $$ /$$__  $$ /$$__  $$\n" \
-                "| $$$$_  $$$$| $$$$$$$$  /$$$$$$$  | $$    | $$  \\ $$| $$$$$$$$| $$  \\__/\n" \
-                "| $$$/ \\  $$$| $$_____/ /$$__  $$  | $$ /$$| $$  | $$| $$_____/| $$      \n" \
-                "| $$/   \\  $$|  $$$$$$$|  $$$$$$$  |  $$$$/| $$  | $$|  $$$$$$$| $$      \n" \
-                "|__/     \\__/ \\_______/ \\_______/   \\___/  |__/  |__/ \\_______/|__/      \n" \
-    );
-    printw("\n\n");
-
-    attron(COLOR_PAIR(2));
-    printw("This utility is designed to show weather using you CLI interface.\n\n");
-    printw("\tTo change between cities simply press n (next) and p (previous) on your keyboard\n");
-    printw("\tTo change number of days forecast press + (more) or - (less)\n");
-    printw("\tTo exit the programm press Esc\n\n");
-    printw("Now you will be able to configure number of days, update frequency and list of cities to show in your forecast\n\n");
-    printw("Press any key to continue!\n");
-
-    getch();
-    endwin();
+uint32_t wwidget::Configuration::GetNumberOfDays() const {
+    return this->days_number_;
 }
-
