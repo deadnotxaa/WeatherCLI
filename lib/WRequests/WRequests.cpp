@@ -4,7 +4,7 @@
 
 bool wwidget::Requests::IsCityExists(std::string& city_name) noexcept {
     cpr::Response response = cpr::Get(cpr::Url{api_ninjas_url_ + city_name},
-                             cpr::Header{{"X-Api-Key", "c7FRAnumOjb85lKwVNkMPw==rGWEsdokJgoSPZgk"}});
+                             cpr::Header{{"X-Api-Key", ""}});
 
     if (response.text == "[]") {
         return false;
@@ -55,7 +55,7 @@ void wwidget::Requests::GetWeatherData(std::string& weather_responce) {
 
 void wwidget::Requests::GetCityCoordinates(const std::string& city_name, double& latitude, double& longitude) {
     cpr::Response response = cpr::Get(cpr::Url{api_ninjas_url_ + city_name},
-                             cpr::Header{{"X-Api-Key", "c7FRAnumOjb85lKwVNkMPw==rGWEsdokJgoSPZgk"}});
+                             cpr::Header{{"X-Api-Key", ""}});
 
     json city_data;
 
