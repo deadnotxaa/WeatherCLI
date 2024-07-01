@@ -1,45 +1,88 @@
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-718a45dd9cf7e7f842a935f5ebbe5719a5e09af4491e668f4dbf3b35d5cca122.svg)](https://classroom.github.com/online_ide?assignment_repo_id=13752744&assignment_repo_type=AssignmentRepo)
-# Лабораторная работа 7
+# Weather Widget
 
-Прогноз погоды. Внешние библиотеки.
+Weather Widget (wwidget) is a C++ console application that provides weather forecasts for multiple cities. The application fetches weather data from the internet and displays it in a user-friendly format using the FTXUI library.
 
-## Задача
+## Features
 
-Реализовать консольное приложение, отображающие прогноз погоды для выбранного списка городов, используя сторонние библиотеки.
+- Fetches weather data for multiple cities.
+- Displays weather data for up to 16 days.
+- User-friendly console interface using FTXUI.
+- Configurable refresh frequency and number of forecast days.
+- Easily add or remove cities.
 
-## Источник данных
+## Installation
 
-- [Open-Meteo](https://open-meteo.com/en/docs#latitude=59.94&longitude=30.31&hourly=temperature_2m&forecast_days=16) для прогноза
-- [Api-Ninjas](https://api-ninjas.com/api/city) для определения координат по названию города
+### Prerequisites
+- CMake 3.28 or higher
+- C++20 or higher
 
-## Функциональные требования
+## Usage
+When you run the application, it will first check if the configuration files (```config.json``` and ```weather.json```) exist. If they do not exist or are invalid, the application will prompt you to create them by providing necessary information such as city names, refresh frequency, and number of forecast days.
 
- - Отображать прогноз погоды на несколько дней вперед (значение по умолчанию задается конфигом)
- - Обновлять с некоторой частотой (задается конфигом)
- - Переключаться между городами с помощью клавиш "n", "p"
- - Заканчивать работу программы по Esc
- - Увеличивать\уменьшать количество дней прогноза по нажатие клавиш "+", "-"
-
-Список городов, частота обновления, количество дней прогноза должны быть определены в конфиге(например в формате ini, json, xml)
-
-## Отображение
-
-В качестве образца для визуализации предлагается взять следующий:
-
-![image](interface.png) Скриншот взят с  https://wttr.in
-
-## Реализация
-
-В данной лабораторной работе вам не запрещено использовать другие библиотеки.
-
-В качестве библиотеки для [HTTP-запросов](https://en.wikipedia.org/wiki/HTTP) требуется воспользоваться [C++ Requests](https://github.com/libcpr/cpr)
+**Example:**  
+<img width="1719" alt="image" src="https://github.com/deadnotxaa/WeatherCLI/assets/91655231/4271d54c-1a6d-4d79-88aa-20b171dd8b81">
 
 
-В данной работе, при взаимодействии с внешними сервисами, может возникать достаточно большое количество коллизий и краевых случаев. Внимательно, подумайте об этом! Ваша программа должна корректно работать и "не падать"
+## Displaying Weather Forecast
+The weather forecast will be displayed in the console using the FTXUI library. Use the following controls:
 
-## Deadline
+* ```n```: Next city.
+* ```p```: Previous city.
+* ```=```: Increase the number of forecast days.
+* ```-```: Decrease the number of forecast days.
 
-1. 20.02.24 0.85
-2. 27.02.24 0.65
-3. 05.03.24 0.5
-    
+## Code Structure
+
+### Main Application (```main.cpp```)
+The entry point of the application, initializes the configuration, checks and reads the configuration file, creates weather configuration if needed, and displays the weather using the Interface class.
+
+```cpp
+#include "lib/WConfig/WConfig.hpp"
+#include "lib/WInterface/WInterface.hpp"
+#include "lib/WRequests/WRequests.hpp"
+
+int main(int argc, char** argv) {
+    wwidget::Configuration configuration;
+
+    if (wwidget::Configuration::IsConfigGood()) {
+        configuration.ReadConfigData();
+    } else {
+        configuration.CreateConfigFile();
+    }
+
+    if (!wwidget::Configuration::IsWeatherDataGood()) {
+        wwidget::Configuration::CreateWeatherConfig();
+    }
+
+    wwidget::Interface::ShowWeather(configuration.GetNumberOfDays());
+
+    return 0;
+}
+```
+
+### Configuration Management (WConfig)
+Handles the creation, validation, and reading of the configuration file.
+
+```WConfig.hpp```: Declares the Configuration class and related functions.
+```WConfig.cpp```: Implements the Configuration class methods.
+
+### User Interface (WInterface)
+Displays the weather forecast using the FTXUI library.
+
+```WInterface.hpp```: Declares the Interface class and related functions.
+```WInterface.cpp```: Implements the Interface class methods.
+
+### Weather Requests (WRequests)
+Fetches weather data and city coordinates from external APIs.
+
+```WRequests.hpp```: Declares the Requests class and related functions.
+```WRequests.cpp```: Implements the Requests class methods.
+
+## Dependencies
+**CMake**
+The project uses CMake for build configuration. The CMakeLists.txt files define the build settings and dependencies.
+
+**Libraries**
+CPR: For making HTTP requests.
+JSON for Modern C++: For parsing JSON data.
+FTXUI: For building the console user interface.
